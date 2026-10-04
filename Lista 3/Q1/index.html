@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0c0e">
+<title>Exercício · Estator com Dois Polos (Questão 1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400;1,500&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#eceae4;
+    --ink-dim:rgba(236,234,228,.58);
+    --ink-faint:rgba(236,234,228,.35);
+    --copper:#d99a63;
+    --bg:#0b0c0e;
+    --hairline:rgba(255,255,255,.09);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:"Space Grotesk","Helvetica Neue",Arial,sans-serif;
+    overflow:hidden;-webkit-font-smoothing:antialiased;
+    user-select:none;-webkit-user-select:none;
+  }
+  #stage{position:fixed;inset:0}
+  #stage canvas{position:absolute;inset:0;z-index:1;display:block;cursor:grab}
+  #vignette{position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:radial-gradient(125% 95% at 50% 40%,rgba(0,0,0,0) 52%,rgba(0,0,0,.46) 100%)}
+  #grain{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:140px 140px}
+  .ui{position:absolute;z-index:5;transition:opacity 1.2s ease}
+  body.dim .ui{opacity:.28}
+
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}}
+  #head{animation:rise .9s cubic-bezier(.2,.7,.2,1) .15s backwards}
+  #orbit{animation:rise .9s cubic-bezier(.2,.7,.2,1) .3s backwards}
+  #zoomread{animation:rise .9s cubic-bezier(.2,.7,.2,1) .38s backwards}
+  #specs{animation:rise .9s cubic-bezier(.2,.7,.2,1) .45s backwards}
+  #nav{animation:rise .9s cubic-bezier(.2,.7,.2,1) .6s backwards}
+
+  .kicker{font-size:10px;letter-spacing:.34em;text-transform:uppercase;color:var(--copper);font-weight:500}
+
+  #head{top:clamp(20px,4.5vh,46px);left:clamp(20px,4vw,50px);max-width:380px;pointer-events:none}
+  #head h1{font-family:"Cormorant Garamond",Georgia,serif;font-weight:400;
+    font-size:clamp(30px,4.6vw,54px);line-height:.98;letter-spacing:.005em;margin-top:14px}
+  #head .lede{margin-top:16px;font-size:12px;font-weight:300;line-height:1.75;color:var(--ink-dim);max-width:320px}
+  #head .lede b{font-weight:500;color:var(--ink)}
+
+  #orbit{top:clamp(20px,4.5vh,46px);right:clamp(20px,4vw,50px);display:flex;align-items:center;gap:10px;
+    color:var(--ink-faint);font-size:9px;letter-spacing:.28em;text-transform:uppercase;pointer-events:none}
+  #orbit .ring{width:11px;height:11px;border-radius:50%;flex:none;
+    border:1px solid rgba(255,255,255,.22);border-top-color:var(--copper);
+    animation:spin 2.6s linear infinite;animation-play-state:paused;opacity:.5}
+  #orbit.on .ring{animation-play-state:running;opacity:1}
+  #orbit.on{color:var(--ink-dim)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  #zoomread{top:calc(clamp(20px,4.5vh,46px) + 30px);right:clamp(20px,4vw,50px);
+    color:var(--ink-faint);font-size:9px;letter-spacing:.28em;text-transform:uppercase;
+    pointer-events:none;font-variant-numeric:tabular-nums}
+
+  #specs{left:clamp(20px,4vw,50px);bottom:clamp(20px,4.5vh,42px);width:258px;}
+  #specs .kicker{color:var(--ink-faint);letter-spacing:.3em}
+  
+  /* Controle Deslizante */
+  input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: var(--copper); cursor: pointer; margin-top: -5px; box-shadow: 0 0 10px rgba(217,154,99,0.5); transition: background 0.2s;}
+  input[type=range]::-webkit-slider-thumb:hover { background: #fff; }
+  input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 2px; cursor: pointer; background: var(--hairline); border-radius: 1px; }
+  input[type=range]:focus { outline: none; }
+
+  #spec-rows{margin-top:16px; border-top:1px solid var(--hairline); padding-top: 8px;}
+  #spec-rows .row{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+    padding:7px 0;border-bottom:1px solid var(--hairline)}
+  #spec-rows .row span{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-faint)}
+  #spec-rows .row b{font-size:12px;font-weight:400;color:var(--ink);text-align:right;white-space:nowrap}
+
+  #nav{right:clamp(20px,4vw,50px);bottom:clamp(20px,4.5vh,42px);
+    display:flex;flex-direction:column;align-items:flex-end;gap:9px}
+
+  .tgl{display:flex;align-items:center;gap:9px;background:none;border:0;cursor:pointer;font-family:inherit;
+    font-size:9.5px;letter-spacing:.3em;text-transform:uppercase;padding:2px 0;
+    color:var(--ink-faint);transition:color .25s}
+  .tgl::before{content:'';width:5px;height:5px;border-radius:50%;flex:none;
+    background:rgba(217,154,99,.22);transition:background .25s; box-shadow: 0 0 4px rgba(217,154,99,0)}
+  .tgl:hover{color:var(--ink-dim)}
+  .tgl.on{color:var(--ink-dim)}
+  .tgl.on::before{background:var(--copper); box-shadow: 0 0 6px rgba(217,154,99,0.4)}
+
+  #nav .hint{margin-top:12px;font-size:9.5px;letter-spacing:.16em;color:var(--ink-faint);
+    text-transform:uppercase;text-align:right; max-width: 130px; line-height: 1.5;}
+
+  .callout{pointer-events:none;white-space:nowrap}
+  .callout span{
+    display:block;position:relative;
+    font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;font-weight:400;
+    color:rgba(236,234,228,.88);padding-bottom:5px;
+    border-bottom:1px solid rgba(217,154,99,.5);
+  }
+  .callout.title span{color:var(--ink);border-bottom-color:rgba(217,154,99,.85)}
+  .callout.left  span{transform:translate(calc(-100% - 12px),-50%)}
+  .callout.right span{transform:translate(12px,-50%)}
+  .callout.top   span{transform:translate(-50%,calc(-100% - 12px))}
+  .callout.bottom span{transform:translate(-50%,12px)}
+
+  #loader{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;gap:10px;
+    align-items:center;justify-content:center;background:var(--bg);
+    color:var(--ink-faint);font-size:10px;letter-spacing:.34em;text-transform:uppercase;
+    transition:opacity .8s ease}
+  #loader.done{opacity:0;pointer-events:none}
+  #loader small{font-size:9px;letter-spacing:.2em;color:rgba(236,234,228,.25)}
+
+  @media(max-width:860px){#head .lede{display:none}}
+  @media(max-width:640px){
+    #specs,#nav .hint{display:none}
+    #head h1{font-size:32px}
+    #orbit-label{display:none}
+    .callout span{font-size:8.5px}
+  }
+  #head,#orbit,#zoomread{margin-top:env(safe-area-inset-top,0px)}
+  #specs,#nav{margin-bottom:env(safe-area-inset-bottom,0px)}
+  #specs{width:292px}
+  @media(max-height:720px){#head .lede{display:none}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="vignette"></div>
+  <div id="grain"></div>
+
+  <header id="head" class="ui">
+    <div class="kicker">Eletromagnetismo · Questão 01</div>
+    <h1>Estator, Dois Polos e Entreferro</h1>
+    <p class="lede">Ajuste <b>i₁</b> e <b>i₂</b> para ver o fluxo em cada ramo. Os polos e o entreferro formam o ramo central (<b>ℜp + ℜg</b>); os arcos superior e inferior do estator (<b>ℜc</b>) são os caminhos de retorno em paralelo. O painel mostra <b>L₁₁</b>, <b>L₂₂</b> e <b>M₁₂</b>.</p>
+  </header>
+
+  <div id="orbit" class="ui"><span class="ring"></span><span id="orbit-label">órbita automática</span></div>
+  <div id="zoomread" class="ui">zoom ×1.0</div>
+
+  <aside id="specs" class="ui">
+    <div class="kicker">Painel de Magnetização</div>
+    <div id="controls" style="margin-top: 14px;">
+       <div style="font-size:9px; color:var(--ink-faint); letter-spacing:.2em; text-transform:uppercase; display:flex; justify-content:space-between;">Corrente i₁ · N₁ (a₁) <span id="v-i1" style="color:var(--copper)"></span></div>
+       <input type="range" id="slider-i1" min="0" max="50" step="1" value="25" style="margin: 12px 0 8px;">
+       <div style="font-size:9px; color:var(--ink-faint); letter-spacing:.2em; text-transform:uppercase; display:flex; justify-content:space-between;">Corrente i₂ · 2N₂ (c₁) <span id="v-i2" style="color:var(--copper)"></span></div>
+       <input type="range" id="slider-i2" min="0" max="50" step="1" value="25" style="margin: 12px 0;">
+    </div>
+    <div id="spec-rows"></div>
+  </aside>
+
+  <nav id="nav" class="ui">
+    <button id="tgl-orbit" class="tgl on" title="tecla O" aria-label="alternar órbita automática"><span>órbita automática</span></button>
+    <button id="tgl-spin" class="tgl on" title="tecla R" aria-label="alternar rotação da peça"><span>rotação da peça</span></button>
+    <button id="lbl-toggle" class="tgl on" title="tecla L" aria-label="alternar rótulos"><span>rótulos das partes</span></button>
+    <button id="tgl-lines" class="tgl on" title="tecla C" aria-label="alternar linhas de campo"><span>linhas de campo</span></button>
+    <button id="tgl-inv" class="tgl" title="inverte o sentido de I₂" aria-label="inverter o sentido de I₂"><span>inverter I₂</span></button>
+    <p class="hint">arraste & role<br>para explorar</p>
+  </nav>
+
+  <div id="loader">montando o circuito</div>
+</div>
+
+<script>
+  setTimeout(function(){
+    var l=document.getElementById('loader');
+    if(l && !l.classList.contains('done')){
+      l.innerHTML='não foi possível carregar o three.js<br><small>verifique a conexão e recarregue</small>';
+    }
+  },14000);
+</script>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls}       from 'three/addons/controls/OrbitControls.js';
+import {RoundedBoxGeometry}  from 'three/addons/geometries/RoundedBoxGeometry.js';
+import {Reflector}           from 'three/addons/objects/Reflector.js';
+import {RoomEnvironment}     from 'three/addons/environments/RoomEnvironment.js';
+import {EffectComposer}      from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass}          from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass}     from 'three/addons/postprocessing/UnrealBloomPass.js';
+import {OutputPass}          from 'three/addons/postprocessing/OutputPass.js';
+import {CSS2DRenderer,CSS2DObject} from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* ---------------- renderer / scene / camera ---------------- */
+const stage=document.getElementById('stage');
+const loaderEl=document.getElementById('loader');
+let renderer;
+try{ renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'}); }
+catch(e){ loaderEl.textContent='webgl indisponível neste navegador'; throw e; }
+
+const DPR=Math.min(window.devicePixelRatio||1,2);
+renderer.setPixelRatio(DPR);
+renderer.setSize(innerWidth,innerHeight);
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.05;
+stage.appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0b0c0e);
+
+const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.05,60);
+camera.position.set(.72,.85,1.08);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.target.set(0,.42,0);
+controls.enableDamping=true; controls.dampingFactor=.07;
+controls.enablePan=false;
+controls.rotateSpeed=.85;
+controls.autoRotate=true; controls.autoRotateSpeed=0;
+controls.minPolarAngle=.18; controls.maxPolarAngle=Math.PI*.55;
+
+/* ---------------- zoom gradual (amortecido) ---------------- */
+controls.enableZoom=false;
+const ZOOM_MIN=.55, ZOOM_MAX=2.6;
+const clampDist=d=>THREE.MathUtils.clamp(d,ZOOM_MIN,ZOOM_MAX);
+const ZOOM_BASE=camera.position.distanceTo(controls.target);
+let zoomTarget=ZOOM_BASE, zoomCur=ZOOM_BASE, zoomTxt='';
+const _v=new THREE.Vector3();
+
+const pmrem=new THREE.PMREMGenerator(renderer);
+scene.environment=pmrem.fromScene(new RoomEnvironment(renderer),.04).texture;
+pmrem.dispose();
+
+scene.add(new THREE.HemisphereLight(0xdfe8f0,0x08090b,.35));
+const key=new THREE.DirectionalLight(0xfff0dd,1.5); key.position.set(1.1,1.7,.8); scene.add(key);
+const rim=new THREE.DirectionalLight(0xa8d4ff,1);   rim.position.set(-1.3,.6,-1); scene.add(rim);
+
+const css2d=new CSS2DRenderer();
+css2d.setSize(innerWidth,innerHeight);
+Object.assign(css2d.domElement.style,{position:'absolute',inset:'0',zIndex:'4',pointerEvents:'none'});
+stage.appendChild(css2d.domElement);
+
+/* ---------------- texturas ---------------- */
+function canvasTex(size,draw,o={}){
+  const c=document.createElement('canvas'); c.width=c.height=size;
+  draw(c.getContext('2d'),size);
+  const t=new THREE.CanvasTexture(c);
+  if(o.srgb) t.colorSpace=THREE.SRGBColorSpace;
+  if(o.repeat){ t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(o.repeat,o.repeat); }
+  t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  return t;
+}
+
+const concreteTex=canvasTex(512,(ctx,s)=>{
+  ctx.fillStyle='#14161a'; ctx.fillRect(0,0,s,s);
+  for(let i=0;i<46;i++){
+    const x=Math.random()*s,y=Math.random()*s,r=26+Math.random()*130;
+    const g=ctx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0,Math.random()>.45?'rgba(255,255,255,.045)':'rgba(0,0,0,.12)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g; ctx.fillRect(x-r,y-r,r*2,r*2);
+  }
+  for(let i=0;i<7200;i++){
+    const v=Math.random(),px=Math.random()*s,py=Math.random()*s;
+    ctx.fillStyle=v>.5?`rgba(255,255,255,${(v-.5)*.13})`:`rgba(0,0,0,${(.5-v)*.2})`;
+    ctx.fillRect(px,py,Math.random()<.05?2:1,1);
+  }
+},{srgb:true,repeat:14});
+
+const noiseTex=canvasTex(256,(ctx,s)=>{
+  const small=document.createElement('canvas'); small.width=small.height=32;
+  const sc=small.getContext('2d');
+  const img=sc.createImageData(32,32);
+  for(let i=0;i<img.data.length;i+=4){
+    const v=100+Math.random()*80|0;
+    img.data[i]=img.data[i+1]=img.data[i+2]=v; img.data[i+3]=255;
+  }
+  sc.putImageData(img,0,0);
+  ctx.imageSmoothingEnabled=true; ctx.drawImage(small,0,0,s,s);
+},{repeat:3});
+
+const fadeTex=canvasTex(512,(ctx,s)=>{
+  const g=ctx.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+  g.addColorStop(0,'rgba(11,12,14,0)');   g.addColorStop(.34,'rgba(11,12,14,0)');
+  g.addColorStop(.55,'rgba(11,12,14,.35)');g.addColorStop(.75,'rgba(11,12,14,.85)');
+  g.addColorStop(1,'rgba(11,12,14,1)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,s,s);
+});
+
+const spriteTex=canvasTex(64,(ctx,s)=>{
+  const g=ctx.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+  g.addColorStop(0,'rgba(255,255,255,1)');
+  g.addColorStop(.28,'rgba(255,255,255,.75)');
+  g.addColorStop(.65,'rgba(255,255,255,.18)');
+  g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,s,s);
+},{srgb:true});
+
+/* ---------------- ambiente de chão ---------------- */
+const FLOOR=40;
+const reflector=new Reflector(new THREE.PlaneGeometry(FLOOR,FLOOR),{
+  clipBias:.003, textureWidth:Math.min(2048,Math.floor(1024*DPR)),
+  textureHeight:Math.min(2048,Math.floor(1024*DPR)), color:0xa8aeb4
+});
+reflector.rotation.x=-Math.PI/2; scene.add(reflector);
+
+const veil=new THREE.Mesh(new THREE.PlaneGeometry(FLOOR,FLOOR),
+  new THREE.MeshBasicMaterial({map:concreteTex,transparent:true,opacity:.5,depthWrite:false}));
+veil.rotation.x=-Math.PI/2; veil.position.y=.0015; veil.renderOrder=-3; scene.add(veil);
+
+const fade=new THREE.Mesh(new THREE.PlaneGeometry(FLOOR,FLOOR),
+  new THREE.MeshBasicMaterial({map:fadeTex,transparent:true,depthWrite:false}));
+fade.rotation.x=-Math.PI/2; fade.position.y=.0045; fade.renderOrder=-1; scene.add(fade);
+
+/* ---------------- materiais do núcleo ---------------- */
+const ironMat  =new THREE.MeshStandardMaterial({color:0x4e5258,metalness:.85,roughness:1,
+  roughnessMap:noiseTex,bumpMap:noiseTex,bumpScale:.0015,envMapIntensity:.6});
+const copperMat=new THREE.MeshStandardMaterial({color:0xc97e4a,metalness:1,roughness:.3,envMapIntensity:1.05});
+const flangeMat=new THREE.MeshStandardMaterial({color:0x161210,metalness:.35,roughness:.55,envMapIntensity:.4});
+const gapMat   =new THREE.MeshBasicMaterial({color:new THREE.Color(0x9ff4ff)});
+
+/* ---------------- helpers de geometria ---------------- */
+function coilMesh({axis='y',cx=0,cy=0,cz=0,radius,height,turns,wireR,segsPerTurn=8}, material){
+  const N=Math.max(4,Math.round(turns*segsPerTurn));
+  const pts=new Array(N+1);
+  for(let i=0;i<=N;i++){
+    const t=i/N, a=t*turns*Math.PI*2, along=(t-.5)*height;
+    const c=radius*Math.cos(a), s=radius*Math.sin(a);
+    pts[i]= axis==='y'?new THREE.Vector3(cx+c,cy+along,cz+s)
+          : axis==='x'?new THREE.Vector3(cx+along,cy+c,cz+s)
+          :            new THREE.Vector3(cx+c,cy+s,cz+along);
+  }
+  return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),N,wireR,8,false), material||copperMat);
+}
+function boxFlange({cx,cy,w=.07,h=.008,d=.066}){
+  const m=new THREE.Mesh(new RoundedBoxGeometry(w,h,d,2,.002),flangeMat);
+  m.position.set(cx,cy,0); return m;
+}
+
+/* ---------------- 01 · Estator com dois polos ---------------- */
+// Ramos em paralelo entre as junções esquerda e direita: arco superior (N₁, ℜc) · arco inferior (ℜc) · polos + entreferro (2N₂, ℜpg = ℜp + ℜg)
+const N1=200, N2=100, Rc=2e5, Rp=4e5, Rg=1.2e6, Rpg=Rp+Rg, D=.06;   // ℜ em Ae/Wb (valores ilustrativos)
+let sign2=1;                                   // −1 inverte o sentido de i₂
+function solve(i1,i2){                         // fluxos positivos = da esquerda para a direita em cada ramo
+  const F1=N1*i1, F2=sign2*2*N2*i2, Gc=1/Rc, Gp=1/Rpg;
+  const U=-(F1*Gc+F2*Gp)/(2*Gc+Gp);
+  return {F1,F2,p:[(U+F1)*Gc,U*Gc,(U+F2)*Gp]};
+}
+
+function buildQ1(){
+  const g=new THREE.Group(), R=.3, B=.27;
+  const sh=new THREE.Shape(); sh.absarc(0,0,R,0,Math.PI*2,false);
+  for(const cy of [.15,-.15]){ const h=new THREE.Path(); h.absellipse(0,cy,.2,.09,0,Math.PI*2,true,0); sh.holes.push(h); }
+  const geo=new THREE.ExtrudeGeometry(sh,{depth:D,bevelEnabled:false,curveSegments:64}); geo.translate(0,0,-D/2);
+  g.add(new THREE.Mesh(geo,ironMat));                                   // estator com duas janelas (arcos superior e inferior)
+  const gm=gapMat.clone(); gm.transparent=true; gm.opacity=.55;
+  for(const x of [-.045,.045]){ const s=new THREE.Mesh(new THREE.BoxGeometry(.01,.12,D*1.12),gm); s.position.set(x,0,0); g.add(s); }   // entreferros
+
+  const mk=()=>{ const m=copperMat.clone(); m.emissive=new THREE.Color(0xd99a63); m.emissiveIntensity=0; return m; };
+  const coils=[mk(),mk()];
+  g.add(coilMesh({axis:'x',cy:B,radius:.055,height:.1,turns:10,wireR:.0012},coils[0]));                              // N₁ no arco superior
+  for(const x of [-.12,.12]) g.add(coilMesh({axis:'x',cx:x,radius:.07,height:.07,turns:8,wireR:.0011},coils[1]));    // N₂ em cada polo
+
+  // linhas de fluxo: laço superior e laço inferior, ambos passando pelos polos e entreferros (faixa central)
+  const Z=D/2+.0015, curves=[], weights=[];
+  const loop=(Ra,yb,s)=>{
+    const p=[], n=28, a0=Math.asin(yb/Ra), cx=Ra*Math.cos(a0);
+    for(let i=0;i<=n;i++){ const t=a0+(Math.PI-2*a0)*i/n; p.push(new THREE.Vector3(Ra*Math.cos(t),s*Ra*Math.sin(t),Z)); }
+    for(let i=1;i<8;i++) p.push(new THREE.Vector3(-cx+2*cx*i/8,s*yb,Z));
+    return new THREE.CatmullRomCurve3(p,true);
+  };
+  for(const d of [-.012,0,.012]){ curves.push(loop(B+d,.02+d*.8,1),loop(B+d,.02+d*.8,-1)); weights.push(1,1); }   // índice par = superior, ímpar = inferior
+
+  const zf=D/2+.004;
+  const labels=[
+    {name:'Estator · µ constante', ang:135, dist:.18, p:[-.2,.2,zf], title:true},
+    {name:'Enrolamento 1 · N₁ espiras (a₁–b₁)', ang:90, dist:.14, p:[0,.325,0]},
+    {name:'Enrolamento 2 · 2N₂ espiras (c₁–c₂)', ang:300, dist:.15, p:[.12,-.07,0]},
+    {name:'Polo · N₂ espiras · ℜp (total)', ang:160, dist:.14, p:[-.12,.07,0]},
+    {name:'Entreferros · ℜg (total)', ang:270, dist:.13, p:[.045,-.06,zf]},
+    {name:'Arco superior · ℜc · ℓc', ang:45, dist:.14, p:[.19,.2,zf]},
+    {name:'Arco inferior · ℜc · ℓc', ang:315, dist:.14, p:[.19,-.2,zf]}
+  ];
+  return {group:g,curves,weights,labels,coils};
+}
+
+/* ---------------- visualizador dinâmico de fluxo e linhas ---------------- */
+const MAXN = 1000;
+class FluxField{
+  constructor(parent){
+    this.holder=new THREE.Group(); parent.add(this.holder);
+    const geo=new THREE.BufferGeometry();
+    this.attr=new THREE.BufferAttribute(new Float32Array(MAXN*3),3);
+    this.attr.setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute('position',this.attr); geo.setDrawRange(0,0);
+    this.geo=geo;
+    
+    // Partículas base
+    this.coreMat=new THREE.PointsMaterial({size:.010,map:spriteTex,transparent:true,opacity:0,
+      blending:THREE.AdditiveBlending,depthWrite:false,color:new THREE.Color(0xd8fbff).multiplyScalar(2)});
+    this.haloMat=new THREE.PointsMaterial({size:.045,map:spriteTex,transparent:true,opacity:0,
+      blending:THREE.AdditiveBlending,depthWrite:false,color:new THREE.Color(0x62d8f2).multiplyScalar(1.15)});
+    
+    // Linhas Sólidas de Campo Magnético
+    this.lineMat=new THREE.LineBasicMaterial({color:0x00e5ff,transparent:true,opacity:0,
+      blending:THREE.AdditiveBlending,depthWrite:false});
+      
+    this.core=new THREE.Points(geo,this.coreMat); this.core.frustumCulled=false; this.core.renderOrder=3;
+    this.halo=new THREE.Points(geo,this.haloMat); this.halo.frustumCulled=false; this.halo.renderOrder=2;
+    this.holder.add(this.halo,this.core);
+    
+    this.lines=[]; this.n=0; this.curves=[];
+    this.idx=new Uint8Array(MAXN); this.off=new Float32Array(MAXN); this.rate=new Float32Array(MAXN);
+    this._p=new THREE.Vector3();
+    this.speedMult = 1.0;
+  }
+  set(curves,weights){
+    this.curves=curves;
+    curves.forEach(c=>c.arcLengthDivisions=600);
+    const lens=curves.map(c=>c.getLength());
+    const eff =curves.map((c,i)=>lens[i]*((weights&&weights[i])||1));
+    const total=eff.reduce((a,b)=>a+b,0);
+    const n=Math.min(MAXN,Math.max(200,Math.round(total/.0025)));
+    this.n=n; this.geo.setDrawRange(0,n);
+    const BASE_SPEED=.15;
+    let i=0;
+    for(let ci=0;ci<curves.length;ci++){
+      const cnt=ci===curves.length-1?n-i:Math.round(n*eff[ci]/total);
+      for(let j=0;j<cnt;j++,i++){
+        this.idx[i]=ci;
+        this.off[i]=(j+Math.random()*.3)/cnt;
+        this.rate[i]=BASE_SPEED/lens[ci];
+      }
+    }
+    // Cria malha visível das curvas
+    for(const c of curves){
+      const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(c.getPoints(200)),this.lineMat);
+      line.frustumCulled=false; line.renderOrder=1;
+      this.holder.add(line); this.lines.push(line);
+    }
+  }
+  setSpeed(s) { this.speedMult = s; }
+  setSigns(a,b){ for(let i=0;i<this.n;i++) this.rate[i]=Math.abs(this.rate[i])*(this.idx[i]%2?b:a); }   // sinal por laço: + = horário
+  setFade(k){
+    this.coreMat.opacity=.85*k; 
+    this.haloMat.opacity=.18*k; 
+    // Linhas sólidas brilham junto com a densidade
+    this.lineMat.opacity=0.08 + (0.75 * k); 
+  }
+  update(dt){
+    const p=this._p,a=this.attr.array;
+    for(let i=0;i<this.n;i++){
+      this.off[i] = (this.off[i] + dt * this.rate[i] * this.speedMult) % 1;
+      let u = this.off[i];
+      if(u<0) u+=1;
+      this.curves[this.idx[i]].getPointAt(u,p);
+      a[i*3]=p.x; a[i*3+1]=p.y; a[i*3+2]=p.z;
+    }
+    this.attr.needsUpdate=true;
+  }
+}
+
+/* ---------------- callouts ---------------- */
+class Callouts{
+  constructor(){
+    this.on=true; this.suppress=false; this.items=[]; this.alpha=0;
+    this.holder=new THREE.Group(); scene.add(this.holder);
+    this._r=new THREE.Vector3(); this._u=new THREE.Vector3();
+    this._A=new THREE.Vector3(); this._B=new THREE.Vector3(); this._d=new THREE.Vector3();
+    this._c=new THREE.Vector3(); this._v=new THREE.Vector3(); this._t=new THREE.Vector3();
+  }
+  build(group,defs){
+    defs.forEach(d=>{
+      const anchor=new THREE.Object3D();
+      anchor.position.set(d.p[0],d.p[1],d.p[2]);
+      group.add(anchor);
+      const rad=d.ang*Math.PI/180, ca=Math.cos(rad), sa=Math.sin(rad);
+      const side=Math.abs(ca)>.4?(ca>0?'right':'left'):(sa>0?'top':'bottom');
+      const dotMat=new THREE.MeshBasicMaterial({color:0xd99a63,transparent:true,opacity:0});
+      const dot=new THREE.Mesh(new THREE.SphereGeometry(.0034,10,10),dotMat);
+      anchor.add(dot);
+      const lg=new THREE.BufferGeometry();
+      lg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));
+      const lm=new THREE.LineBasicMaterial({color:0xcfc9be,transparent:true,opacity:0,depthWrite:false});
+      const line=new THREE.Line(lg,lm); line.frustumCulled=false;
+      this.holder.add(line);
+      const div=document.createElement('div');
+      div.className='callout '+side+(d.title?' title':'');
+      const span=document.createElement('span'); span.textContent=d.name; div.appendChild(span);
+      const lo=new CSS2DObject(div); this.holder.add(lo);
+      this.items.push({def:d,anchor,dotMat,line,lm,lo,a:0,revealAt:0,ca,sa});
+    });
+  }
+  stagger(time,base,step){ this.items.forEach((it,i)=>it.revealAt=time+base+i*step); }
+  update(time,dt){
+    camera.updateMatrixWorld();
+    const target=(this.on&&!this.suppress&&this.items.length)?1:0;
+    this.alpha=THREE.MathUtils.damp(this.alpha,target,8,dt);
+    if(!this.items.length) return;
+    this._r.setFromMatrixColumn(camera.matrixWorld,0);
+    this._u.setFromMatrixColumn(camera.matrixWorld,1);
+    root.getWorldPosition(this._c);
+    for(const it of this.items){
+      it.anchor.getWorldPosition(this._A);
+      this._d.copy(this._r).multiplyScalar(it.ca).addScaledVector(this._u,it.sa).normalize();
+      this._B.copy(this._A).addScaledVector(this._d,it.def.dist);
+      const pos=it.line.geometry.attributes.position;
+      pos.setXYZ(0,this._A.x,this._A.y,this._A.z);
+      pos.setXYZ(1,this._B.x,this._B.y,this._B.z);
+      pos.needsUpdate=true;
+      it.lo.position.copy(this._B);
+      this._v.set(this._A.x-this._c.x,0,this._A.z-this._c.z);
+      this._t.set(camera.position.x-this._c.x,0,camera.position.z-this._c.z);
+      const cosA=(this._v.lengthSq()>1e-10&&this._t.lengthSq()>1e-10)
+        ? this._v.normalize().dot(this._t.normalize()) : 1;
+      const k=THREE.MathUtils.smoothstep(cosA,-.5,-.08);
+      const reveal=(time>it.revealAt)?1:0;
+      it.a=THREE.MathUtils.damp(it.a,k*reveal,7,dt);
+      const vis=this.alpha*it.a;
+      it.lo.element.style.opacity=vis.toFixed(3);
+      it.lm.opacity=.5*vis;
+      it.dotMat.opacity=vis;
+    }
+  }
+}
+
+/* ---------------- hierarquia de cena ---------------- */
+const root=new THREE.Group(); root.position.y=.42; scene.add(root);
+const spin=new THREE.Group(); spin.rotation.y=-.4; root.add(spin);
+const pulse=new THREE.Group(); spin.add(pulse);
+const flux=new FluxField(spin);
+const callouts=new Callouts();
+
+/* ---------------- Montagem do Modelo ---------------- */
+let modelObj = buildQ1();
+pulse.add(modelObj.group);
+flux.set(modelObj.curves, modelObj.weights);
+callouts.build(modelObj.group, modelObj.labels);
+callouts.stagger(0, .5, .09);
+
+/* ---------------- Física & Visualização Interativa ---------------- */
+const sI1=document.getElementById('slider-i1'), sI2=document.getElementById('slider-i2');
+const tglInv=document.getElementById('tgl-inv'), specRows=document.getElementById('spec-rows');
+const fm=(x,d)=>x.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fwb=p=>{ const a=Math.abs(p); return a>=1?fm(a,3)+' Wb':(a>=1e-3?fm(a*1e3,2)+' mWb':fm(a*1e6,1)+' µWb'); };
+const seta=p=>Math.abs(p)<1e-12?'·':(p>0?'→':'←');
+const NOMES=['arco superior · ℜc','arco inferior · ℜc','polos + entreferro'];
+function updatePhysics(){
+  const i1=sI1.value/10, i2=sI2.value/10, r=solve(i1,i2), a=solve(1,0), b=solve(0,1);
+  const L11=N1*a.p[0], L22=sign2*2*N2*b.p[2], M=N1*b.p[0];
+  document.getElementById('v-i1').textContent=fm(i1,1)+' A';
+  document.getElementById('v-i2').textContent=(sign2<0?'−':'')+fm(i2,1)+' A';
+  const rows=r.p.map((p,i)=>`<div class="row"><span>φ ${NOMES[i]}</span><b>${seta(p)} ${fwb(p)}</b></div>`).join('');
+  specRows.innerHTML=`
+    <div class="row"><span>FMM N₁i₁ · 2N₂i₂</span><b style="color:var(--copper)">${fm(r.F1,0)} · ${fm(Math.abs(r.F2),0)} Ae</b></div>
+    ${rows}
+    <div class="row"><span>ℜc · ℜp · ℜg</span><b>${fm(Rc/1e3,0)} · ${fm(Rp/1e3,0)} · ${fm(Rg/1e3,0)} kAe/Wb</b></div>
+    <div class="row"><span>L₁₁ · L₂₂ · M₁₂</span><b style="color:var(--copper)">${fm(L11*1e3,1)} · ${fm(L22*1e3,1)} · ${fm(M*1e3,1)} mH</b></div>
+    <p style="margin-top:10px;font-size:8.5px;letter-spacing:.14em;line-height:1.6;color:var(--ink-faint);text-transform:uppercase">ℜpg = ℜp + ℜg · L₁₁ = N₁²(ℜc+ℜpg) / [ℜc(ℜc+2ℜpg)] · L₂₂ = 8N₂² / (ℜc+2ℜpg) · M₁₂ = ∓2N₁N₂ / (ℜc+2ℜpg) · → = da esquerda para a direita</p>`;
+  const k=Math.min(1,Math.max(Math.abs(r.p[0]),Math.abs(r.p[1]))/3e-3);
+  const sg=x=>Math.abs(x)<1e-12?0:(x>0?-1:1);   // fluxo esq→dir no arco = sentido contrário ao da curva
+  modelObj.coils[0].emissiveIntensity=i1/5*2.2; modelObj.coils[1].emissiveIntensity=i2/5*2.2;
+  flux.setSigns(sg(r.p[0]),sg(r.p[1]));
+  flux.setFade(.1+k*.9);
+  flux.setSpeed(k*1.5);
+}
+sI1.addEventListener('input',updatePhysics); sI2.addEventListener('input',updatePhysics);
+tglInv.addEventListener('click',()=>{ sign2=-sign2; tglInv.classList.toggle('on',sign2<0); updatePhysics(); markInteract(); });
+updatePhysics();
+
+/* ---------------- UI / Interação ---------------- */
+let autoOrbitOn=true, spinOn=true, linesOn=true;
+const tglOrbitBtn=document.getElementById('tgl-orbit');
+const tglSpinBtn =document.getElementById('tgl-spin');
+const lblBtn=document.getElementById('lbl-toggle');
+const tglLinesBtn=document.getElementById('tgl-lines');
+const orbitEl=document.getElementById('orbit');
+const orbitLabel=document.getElementById('orbit-label');
+const zoomRead=document.getElementById('zoomread');
+
+tglOrbitBtn.addEventListener('click',()=>{ autoOrbitOn=!autoOrbitOn; tglOrbitBtn.classList.toggle('on',autoOrbitOn); markInteract();});
+tglSpinBtn .addEventListener('click',()=>{ spinOn=!spinOn; tglSpinBtn.classList.toggle('on',spinOn); markInteract();});
+lblBtn.addEventListener('click',()=>{ callouts.on=!callouts.on; lblBtn.classList.toggle('on',callouts.on); markInteract();});
+
+// Botão para exibir / esconder malha estática das Linhas de Campo
+tglLinesBtn.addEventListener('click',()=>{ 
+  linesOn=!linesOn; 
+  tglLinesBtn.classList.toggle('on',linesOn); 
+  flux.lines.forEach(l => l.visible = linesOn);
+  markInteract();
+});
+
+let lastInteract=performance.now(), lastActivity=performance.now();
+const el=renderer.domElement;
+
+function markInteract(){ lastInteract=performance.now(); }
+function markActivity(){ lastActivity=performance.now(); }
+
+window.addEventListener('wheel',e=>{
+  if(e.target!==el) return;
+  e.preventDefault();
+  const dy=e.deltaMode===1?e.deltaY*32:(e.deltaMode===2?e.deltaY*100:e.deltaY);
+  zoomTarget=clampDist(zoomTarget*Math.exp(dy*0.00115));
+  markInteract(); markActivity();
+},{passive:false,capture:true});
+
+el.addEventListener('pointerdown',e=>{ markInteract(); markActivity(); });
+el.addEventListener('pointermove',e=>{ markActivity(); });
+controls.addEventListener('start',markInteract);
+
+/* ---------------- loop de renderização ---------------- */
+const composer=new EffectComposer(renderer,
+  new THREE.WebGLRenderTarget(innerWidth*DPR,innerHeight*DPR,{type:THREE.HalfFloatType,samples:4}));
+composer.setPixelRatio(DPR);
+composer.setSize(innerWidth,innerHeight);
+composer.addPass(new RenderPass(scene,camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.65,.45,.78));
+composer.addPass(new OutputPass());
+
+const clock=new THREE.Clock();
+let time=0, booted=false;
+const BASE_ROT=.55;
+const SPIN_SPEED=.12;
+let rotCur=0, spinCur=0, orbitOn=null, orbitTxt=null, dimOn=null;
+
+function frame(){
+  const dt=Math.min(clock.getDelta(),.05);
+  time+=dt;
+
+  spinCur=THREE.MathUtils.damp(spinCur,spinOn?SPIN_SPEED:0,3.2,dt);
+  spin.rotation.y+=spinCur*dt;
+
+  const idle=(performance.now()-lastInteract)>3000;
+  rotCur=THREE.MathUtils.damp(rotCur,(autoOrbitOn&&idle)?BASE_ROT:0,1.5,dt);
+  controls.autoRotateSpeed=rotCur;
+  controls.update();
+
+  zoomCur=THREE.MathUtils.damp(zoomCur,zoomTarget,5,dt);
+  _v.copy(camera.position).sub(controls.target);
+  const L=_v.length()||1e-9;
+  camera.position.copy(controls.target).addScaledVector(_v,zoomCur/L);
+  const zt='zoom ×'+(ZOOM_BASE/zoomCur).toFixed(1);
+  if(zt!==zoomTxt){ zoomTxt=zt; zoomRead.textContent=zt; }
+
+  flux.update(dt);
+  callouts.update(time,dt);
+
+  const auto=autoOrbitOn&&idle&&rotCur>.15;
+  if(auto!==orbitOn){ orbitOn=auto; orbitEl.classList.toggle('on',auto); }
+  const otxt=!autoOrbitOn?'órbita desativada':(auto?'órbita automática':'órbita pausada');
+  if(otxt!==orbitTxt){ orbitTxt=otxt; orbitLabel.textContent=otxt; }
+  const dim=(performance.now()-lastActivity)>9000;
+  if(dim!==dimOn){ dimOn=dim; document.body.classList.toggle('dim',dim); }
+
+  composer.render();
+  css2d.render(scene,camera);
+  if(!booted){ booted=true; loaderEl.classList.add('done'); }
+}
+renderer.setAnimationLoop(frame);
+
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+  composer.setSize(innerWidth,innerHeight);
+  css2d.setSize(innerWidth,innerHeight);
+});
+</script>
+</body>
+</html>
