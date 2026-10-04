@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Questão 05 · Toróide e Trajetória Média</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#eceae4;--dim:rgba(236,234,228,.58);--faint:rgba(236,234,228,.35);--cu:#d99a63;--bg:#0b0c0e;--hair:rgba(255,255,255,.09);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:"Space Grotesk","Helvetica Neue",Arial,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none}
+#stage{position:fixed;inset:0}
+#stage canvas{position:absolute;inset:0;z-index:1;display:block;cursor:grab}
+#vig{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(125% 95% at 50% 40%,rgba(0,0,0,0) 52%,rgba(0,0,0,.46) 100%)}
+.ui{position:absolute;z-index:5;transition:opacity 1.2s ease}
+body.dim .ui{opacity:.28}
+.kick{font-size:10px;letter-spacing:.34em;text-transform:uppercase;color:var(--cu);font-weight:500}
+#head{top:clamp(20px,4.5vh,46px);left:clamp(20px,4vw,50px);max-width:380px;pointer-events:none;margin-top:env(safe-area-inset-top,0px)}
+#head h1{font:400 clamp(30px,4.6vw,54px)/.98 "Cormorant Garamond",Georgia,serif;margin-top:14px}
+#head p{margin-top:16px;font-size:12px;font-weight:300;line-height:1.75;color:var(--dim);max-width:320px}
+#head b{font-weight:500;color:var(--ink)}
+#specs{left:clamp(20px,4vw,50px);bottom:clamp(20px,4.5vh,42px);width:292px;margin-bottom:env(safe-area-inset-bottom,0px)}
+#specs .kick{color:var(--faint);letter-spacing:.3em}
+.lab{margin-top:14px;font-size:9px;color:var(--faint);letter-spacing:.2em;text-transform:uppercase;display:flex;justify-content:space-between}
+.lab span{color:var(--cu)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;background:transparent;margin:12px 0 4px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;height:12px;width:12px;border-radius:50%;background:var(--cu);cursor:pointer;margin-top:-5px;box-shadow:0 0 10px rgba(217,154,99,.5)}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--hair);border-radius:1px}
+input[type=range]::-moz-range-thumb{height:12px;width:12px;border:0;border-radius:50%;background:var(--cu)}
+input[type=range]::-moz-range-track{height:2px;background:var(--hair)}
+input[type=range]:focus-visible{outline:1px solid var(--cu);outline-offset:4px}
+#rows{margin-top:16px;border-top:1px solid var(--hair);padding-top:8px}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:7px 0;border-bottom:1px solid var(--hair)}
+.row span{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+.row b{font-size:12px;font-weight:400;white-space:nowrap}
+.row.big b{color:var(--cu)}
+#note{margin-top:10px;font-size:8.5px;letter-spacing:.14em;line-height:1.6;color:var(--faint);text-transform:uppercase}
+#nav{right:clamp(20px,4vw,50px);bottom:clamp(20px,4.5vh,42px);display:flex;flex-direction:column;align-items:flex-end;gap:9px;margin-bottom:env(safe-area-inset-bottom,0px)}
+.tgl{display:flex;align-items:center;gap:9px;background:none;border:0;cursor:pointer;font:inherit;font-size:9.5px;letter-spacing:.3em;text-transform:uppercase;padding:2px 0;color:var(--faint);transition:color .25s}
+.tgl::before{content:'';width:5px;height:5px;border-radius:50%;background:rgba(217,154,99,.22);transition:.25s}
+.tgl:hover,.tgl.on{color:var(--dim)}
+.tgl.on::before{background:var(--cu);box-shadow:0 0 6px rgba(217,154,99,.4)}
+.hint{margin-top:12px;font-size:9.5px;letter-spacing:.16em;color:var(--faint);text-transform:uppercase;text-align:right;line-height:1.5}
+.callout{pointer-events:none;white-space:nowrap}
+.callout::before{content:'';position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--cu);box-shadow:0 0 8px rgba(217,154,99,.7)}
+.callout span{display:block;font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:rgba(236,234,228,.88);padding-bottom:5px;border-bottom:1px solid rgba(217,154,99,.5)}
+.callout.r span{transform:translate(calc(50% + 14px),-120%)}
+.callout.l span{transform:translate(calc(-50% - 14px),-120%)}
+.callout.title span{color:var(--ink);border-bottom-color:rgba(217,154,99,.85)}
+#loader{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;background:var(--bg);color:var(--faint);font-size:10px;letter-spacing:.34em;text-transform:uppercase;transition:opacity .8s ease}
+#loader.done{opacity:0;pointer-events:none}
+#ckt{top:clamp(20px,4.5vh,46px);right:clamp(20px,4vw,50px);width:clamp(116px,22vw,168px);margin-top:env(safe-area-inset-top,0px);color:var(--dim);pointer-events:none}
+#ckt svg{width:100%;display:block;font:8px "Space Grotesk",sans-serif;letter-spacing:.08em}
+#ckt .k{margin-bottom:6px;font-size:9px;letter-spacing:.28em;text-transform:uppercase;text-align:right;color:var(--faint)}
+@media(max-width:860px),(max-height:720px){#head p{display:none}}
+@media(max-width:640px){#nav{display:none}#specs{left:16px;right:16px;width:auto}#note{display:none}#head h1{font-size:32px}#head{max-width:calc(100% - 150px)}#ckt .cap{display:none}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="vig"></div>
+  <header id="head" class="ui">
+    <div class="kick">Eletromagnetismo · Questão 05</div>
+    <h1>Toróide e Trajetória Média</h1>
+    <p>Pela lei de Ampère, <b>H·ℓm = N·i</b>. A trajetória média é a circunferência de raio <b>rm = (ID+OD)/4</b>, então <b>ℓm = 2π·rm</b> e <b>H = N·i / ℓm</b>. Ajuste <b>i</b> e <b>N</b> e veja o campo percorrer o núcleo.</p>
+  </header>
+  <div id="ckt" class="ui"><div class="k">circuito magnético</div>
+    <svg viewBox="0 0 156 112" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round" role="img" aria-label="circuito magnético equivalente: fonte Ni em série com a relutância ℜ">
+      <path d="M30 20H138V92H30M30 20V38M30 66V92M72 15L80 20L72 25"/>
+      <circle cx="30" cy="52" r="14" fill="#0b0c0e"/>
+      <rect x="131" y="44" width="14" height="24" fill="#0b0c0e"/>
+      <g fill="currentColor" stroke="none" text-anchor="middle"><text x="30" y="55">Ni</text><text x="138" y="59">ℜ</text><text x="80" y="12">φ</text><text class="cap" x="84" y="58">H·ℓm = Ni</text><text class="cap" x="84" y="107">ℓm = 16,49 cm</text></g>
+    </svg></div>
+  <aside id="specs" class="ui">
+    <div class="kick">Painel de Magnetização</div>
+    <div class="lab">Corrente i <span id="v-i"></span></div>
+    <input type="range" id="s-i" min="0" max="6" step="0.1" value="3" aria-label="corrente i">
+    <div class="lab">Espiras N <span id="v-n"></span></div>
+    <input type="range" id="s-n" min="5" max="60" step="1" value="25" aria-label="número de espiras N">
+    <div id="rows"></div>
+  </aside>
+  <nav id="nav" class="ui">
+    <button id="t-orbit" class="tgl on"><span>órbita automática</span></button>
+    <button id="t-lbl" class="tgl on"><span>rótulos das partes</span></button>
+    <button id="t-lm" class="tgl on"><span>comprimento médio</span></button>
+    <button id="t-lines" class="tgl on"><span>linhas de campo</span></button>
+    <button id="t-inv" class="tgl"><span>inverter i</span></button>
+    <p class="hint">arraste &amp; role<br>para explorar</p>
+  </nav>
+  <div id="loader">montando o toróide</div>
+</div>
+
+<script>
+setTimeout(function(){var l=document.getElementById('loader');if(l&&!l.classList.contains('done'))l.innerHTML='não foi possível carregar o three.js<br><small>verifique a conexão e recarregue</small>'},14000);
+</script>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {Reflector} from 'three/addons/objects/Reflector.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
+import {CSS2DRenderer,CSS2DObject} from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* ---------- renderer / cena / câmera ---------- */
+const $=id=>document.getElementById(id), stage=$('stage'), loaderEl=$('loader');
+let renderer;
+try{renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})}
+catch(e){loaderEl.textContent='webgl indisponível neste navegador';throw e}
+const DPR=Math.min(devicePixelRatio||1,2), PI2=Math.PI*2, V3=(x,y,z)=>new THREE.Vector3(x,y,z);
+renderer.setPixelRatio(DPR); renderer.setSize(innerWidth,innerHeight);
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+stage.appendChild(renderer.domElement);
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x0b0c0e);
+const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.05,60); camera.position.set(.6,.78,1.02);
+const controls=new OrbitControls(camera,renderer.domElement);
+Object.assign(controls,{enableDamping:true,dampingFactor:.07,enablePan:false,rotateSpeed:.85,autoRotate:true,autoRotateSpeed:0,minDistance:.5,maxDistance:2.6,minPolarAngle:.18,maxPolarAngle:Math.PI*.55});
+controls.target.set(0,.2,0);
+const pm=new THREE.PMREMGenerator(renderer);
+scene.environment=pm.fromScene(new RoomEnvironment(renderer),.04).texture; pm.dispose();
+scene.add(new THREE.HemisphereLight(0xdfe8f0,0x08090b,.35));
+const key=new THREE.DirectionalLight(0xfff0dd,1.5); key.position.set(1.1,1.7,.8); scene.add(key);
+const rim=new THREE.DirectionalLight(0xa8d4ff,1); rim.position.set(-1.3,.6,-1); scene.add(rim);
+const css2d=new CSS2DRenderer(); css2d.setSize(innerWidth,innerHeight);
+Object.assign(css2d.domElement.style,{position:'absolute',inset:'0',zIndex:'4',pointerEvents:'none'});
+stage.appendChild(css2d.domElement);
+
+/* ---------- texturas e chão ---------- */
+function radTex(sz,stops,srgb){const c=document.createElement('canvas');c.width=c.height=sz;const x=c.getContext('2d'),g=x.createRadialGradient(sz/2,sz/2,0,sz/2,sz/2,sz/2);stops.forEach(([o,col])=>g.addColorStop(o,col));x.fillStyle=g;x.fillRect(0,0,sz,sz);const t=new THREE.CanvasTexture(c);if(srgb)t.colorSpace=THREE.SRGBColorSpace;return t}
+const spriteTex=radTex(64,[[0,'rgba(255,255,255,1)'],[.28,'rgba(255,255,255,.75)'],[.65,'rgba(255,255,255,.18)'],[1,'rgba(255,255,255,0)']],true);
+const fadeTex=radTex(512,[[0,'rgba(11,12,14,0)'],[.34,'rgba(11,12,14,0)'],[.55,'rgba(11,12,14,.35)'],[.75,'rgba(11,12,14,.85)'],[1,'rgba(11,12,14,1)']]);
+const FL=40, TS=Math.min(2048,Math.floor(1024*DPR));
+const flat=(m,y,ro)=>{const p=new THREE.Mesh(new THREE.PlaneGeometry(FL,FL),m);p.rotation.x=-Math.PI/2;p.position.y=y;p.renderOrder=ro;scene.add(p)};
+const refl=new Reflector(new THREE.PlaneGeometry(FL,FL),{clipBias:.003,textureWidth:TS,textureHeight:TS,color:0xa8aeb4});
+refl.rotation.x=-Math.PI/2; scene.add(refl);
+flat(new THREE.MeshBasicMaterial({color:0x0b0c0e,transparent:true,opacity:.4,depthWrite:false}),.0015,-3);
+flat(new THREE.MeshBasicMaterial({map:fadeTex,transparent:true,depthWrite:false}),.0045,-1);
+
+/* ---------- geometria do toróide (1 u = 10 cm) ---------- */
+const ID=.05, OD=.055, Hc=.06, SC=10;                      // m · Hc ilustrativo (H não depende dele)
+const Ri=ID/2*SC, Ro=OD/2*SC, rmS=(Ri+Ro)/2;
+const ironMat=new THREE.MeshStandardMaterial({color:0x4e5258,metalness:.85,roughness:.5,envMapIntensity:.7});
+const cuMat=new THREE.MeshStandardMaterial({color:0xc97e4a,metalness:1,roughness:.3,envMapIntensity:1.05,emissive:0xd99a63,emissiveIntensity:0});
+const root=new THREE.Group(); root.position.y=.2; scene.add(root);
+const ring=(r,y,n)=>Array.from({length:n+1},(_,i)=>V3(r*Math.cos(PI2*i/n),y,-r*Math.sin(PI2*i/n)));
+
+const sh=new THREE.Shape(); sh.absarc(0,0,Ro,0,PI2,false);
+const hole=new THREE.Path(); hole.absarc(0,0,Ri,0,PI2,true); sh.holes.push(hole);
+const cg=new THREE.ExtrudeGeometry(sh,{depth:Hc,bevelEnabled:false,curveSegments:96}); cg.translate(0,0,-Hc/2); cg.rotateX(-Math.PI/2);
+root.add(new THREE.Mesh(cg,ironMat));
+
+const coilG=new THREE.Group(); root.add(coilG);
+function buildCoil(n){                                      // n espiras igualmente espaçadas
+  coilG.children.slice().forEach(m=>{m.geometry.dispose();coilG.remove(m)});
+  const a=(Ro-Ri)/2+.012, b=Hc/2+.012, e=(v,p)=>Math.sign(v)*Math.abs(v)**p;
+  for(let k=0;k<n;k++){
+    const th=PI2*k/n, c=Math.cos(th), s=Math.sin(th), pts=[];
+    for(let j=0;j<24;j++){const u=PI2*j/24, r=rmS+a*e(Math.cos(u),.35); pts.push(V3(r*c,b*e(Math.sin(u),.35),-r*s))}
+    coilG.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,true),48,.0045,6,true),cuMat));
+  }
+}
+
+/* ---------- linhas e partículas de campo (H circula em ℓm) ---------- */
+const MAXN=900, fpos=new THREE.BufferAttribute(new Float32Array(MAXN*3),3), fgeo=new THREE.BufferGeometry(), lines=[], curves=[], yF=Hc/2+.002;
+fpos.setUsage(THREE.DynamicDrawUsage); fgeo.setAttribute('position',fpos);
+const lineM=new THREE.LineBasicMaterial({color:0x00e5ff,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false});
+for(const f of [.2,.5,.8]){
+  const c=new THREE.CatmullRomCurve3(ring(Ri+(Ro-Ri)*f,yF,96).slice(0,-1),true); c.arcLengthDivisions=400; curves.push(c);
+  const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(c.getPoints(200)),lineM); l.renderOrder=1; l.frustumCulled=false; root.add(l); lines.push(l);
+}
+const mkPts=(size,col,ro)=>{const m=new THREE.PointsMaterial({size,map:spriteTex,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,color:col}),p=new THREE.Points(fgeo,m);p.frustumCulled=false;p.renderOrder=ro;root.add(p);return m};
+const coreM=mkPts(.01,new THREE.Color(0xd8fbff).multiplyScalar(2),3), haloM=mkPts(.045,new THREE.Color(0x62d8f2).multiplyScalar(1.15),2);
+const NP=Math.min(MAXN,Math.round(curves.reduce((s,c)=>s+c.getLength(),0)/.0035)), pid=new Uint8Array(NP), off=new Float32Array(NP), rate=new Float32Array(NP);
+fgeo.setDrawRange(0,NP);
+for(let i=0;i<NP;i++){const c=i%3; pid[i]=c; off[i]=(Math.floor(i/3)+Math.random()*.3)/(NP/3); rate[i]=.22/curves[c].getLength()}
+const _p=new THREE.Vector3();
+function fluxUpdate(dt,sp){const a=fpos.array;for(let i=0;i<NP;i++){off[i]=((off[i]+dt*rate[i]*sp)%1+1)%1;curves[pid[i]].getPointAt(off[i],_p);a[3*i]=_p.x;a[3*i+1]=_p.y;a[3*i+2]=_p.z}fpos.needsUpdate=true}
+
+/* ---------- comprimento médio ℓm (tracejado dourado em raio-X, como no index.html) e raio rm ---------- */
+const yT=0, ca=Math.cos(.35), sa=Math.sin(.35), tip=V3(rmS*ca,yT,rmS*sa), lmG=new THREE.Group(); root.add(lmG);
+const xray=o=>({color:0xffd700,transparent:true,opacity:.9,depthTest:false,...o});
+const mpath=new THREE.Line(new THREE.BufferGeometry().setFromPoints(ring(rmS,yT,160)),new THREE.LineDashedMaterial(xray({dashSize:.012,gapSize:.007})));
+mpath.computeLineDistances(); mpath.renderOrder=5; lmG.add(mpath);
+const rad=new THREE.Line(new THREE.BufferGeometry().setFromPoints([V3(0,yT,0),tip]),new THREE.LineBasicMaterial(xray({}))); rad.renderOrder=5; lmG.add(rad);
+const dot=new THREE.Mesh(new THREE.SphereGeometry(.005,12,12),new THREE.MeshBasicMaterial(xray({opacity:1}))); dot.position.copy(tip); dot.renderOrder=6; lmG.add(dot);
+
+/* ---------- rótulos ---------- */
+const labels=[];
+function label(text,p,side,o={}){
+  const d=document.createElement('div'); d.className='callout '+side+(o.title?' title':'');
+  const s=document.createElement('span'); s.textContent=text; d.appendChild(s);
+  const c=new CSS2DObject(d); c.position.copy(p); root.add(c); labels.push({d,p,always:!o.title,lm:o.lm}); return s;
+}
+label('Núcleo · ID = 5 cm · OD = 5,5 cm',V3(Ro*.94,0,-Ro*.34),'r',{title:true});
+const coilLbl=label('',V3(rmS,Hc/2+.012,0),'r');
+label('rm = 2,625 cm',V3(rmS*ca/2,yT,rmS*sa/2),'l',{lm:true});
+label('Comprimento médio · ℓm = 2π·rm',V3(-rmS,yT,0),'l',{lm:true});
+
+/* ---------- física: H = N·i / ℓm ---------- */
+const fm=(x,d)=>x.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const rm=(ID+OD)/4, lm=PI2*rm;                              // m
+let sign=1, flow=1, built=0, auto=true, lbl=true, lmOn=true, last=performance.now(), act=last;
+function update(){
+  const I=+$('s-i').value, N=+$('s-n').value, F=N*I, H=F/lm, k=Math.min(1,I/6), sg=sign<0?'−':'';
+  $('v-i').textContent=fm(I,1)+' A'; $('v-n').textContent=N+' esp.';
+  if(N!==built){buildCoil(N); built=N; coilLbl.textContent='Bobina · N = '+N+' espiras'}
+  $('rows').innerHTML=`<div class="row"><span>rm = (ID+OD)/4</span><b>${fm(rm*100,3)} cm</b></div>
+  <div class="row"><span>ℓm = 2π·rm</span><b>${fm(lm*100,2)} cm</b></div>
+  <div class="row"><span>FMM = N·i</span><b>${sg}${fm(F,1)} Ae</b></div>
+  <div class="row big"><span>H = N·i / ℓm</span><b>${sg}${fm(H,1)} Ae/m</b></div>
+  <p id="note">Lei de Ampère: ∮H·dl = N·i · H uniforme em ℓm</p>`;
+  cuMat.emissiveIntensity=k*2.2; flow=k*1.5;
+  coreM.opacity=.85*k; haloM.opacity=.18*k; lineM.opacity=.08+.75*k;
+}
+update();
+
+/* ---------- interação ---------- */
+const mark=()=>{last=act=performance.now()};
+$('s-i').oninput=$('s-n').oninput=update;
+const tg=(id,fn)=>{const b=$(id);b.onclick=()=>{b.classList.toggle('on');fn(b.classList.contains('on'));mark()}};
+tg('t-orbit',v=>auto=v); tg('t-lbl',v=>lbl=v); tg('t-lm',v=>{lmOn=v;lmG.visible=v}); tg('t-lines',v=>lines.forEach(l=>l.visible=v)); tg('t-inv',v=>{sign=v?-1:1;update()});
+controls.addEventListener('start',mark);
+renderer.domElement.addEventListener('pointermove',()=>{act=performance.now()});
+
+/* ---------- pós-processamento e loop ---------- */
+const composer=new EffectComposer(renderer,new THREE.WebGLRenderTarget(innerWidth*DPR,innerHeight*DPR,{type:THREE.HalfFloatType,samples:4}));
+composer.setPixelRatio(DPR); composer.setSize(innerWidth,innerHeight);
+composer.addPass(new RenderPass(scene,camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.65,.45,.78));
+composer.addPass(new OutputPass());
+
+const clock=new THREE.Clock(); let rot=0, la=1, booted=false, dimOn=false;
+renderer.setAnimationLoop(()=>{
+  const dt=Math.min(clock.getDelta(),.05), now=performance.now();
+  rot=THREE.MathUtils.damp(rot,auto&&now-last>3000?.55:0,1.5,dt); controls.autoRotateSpeed=rot; controls.update();
+  fluxUpdate(dt,sign*flow);
+  la=THREE.MathUtils.damp(la,lbl?1:0,8,dt);
+  const cx=camera.position.x, cz=camera.position.z, cn=Math.hypot(cx,cz)||1;
+  for(const L of labels){
+    const c=(L.p.x*cx+L.p.z*cz)/((Math.hypot(L.p.x,L.p.z)||1)*cn);
+    L.d.style.opacity=(la*(L.lm&&!lmOn?0:1)*(L.always?1:THREE.MathUtils.smoothstep(c,-.5,-.08))).toFixed(2);
+  }
+  const dm=now-act>9000; if(dm!==dimOn){dimOn=dm;document.body.classList.toggle('dim',dm)}
+  composer.render(); css2d.render(scene,camera);
+  if(!booted){booted=true;loaderEl.classList.add('done')}
+});
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight); composer.setSize(innerWidth,innerHeight); css2d.setSize(innerWidth,innerHeight);
+});
+</script>
+</body>
+</html>
